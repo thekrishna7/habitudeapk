@@ -254,14 +254,48 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   ],
                 ),
               ),
-            ] else if (task.type == TaskType.steps)
-              _buildFeatureBanner(
-                icon: Icons.directions_walk_rounded,
-                title: 'Pedometer Step Tracking',
-                description:
-                    'Automatic device pedometer sync is arriving in Phase 05. You can log manual steps below.',
-                accentColor: AppColors.primary,
+            ] else if (task.type == TaskType.steps) ...[
+              AppCard(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                borderColor: AppColors.primary.withValues(alpha: 0.3),
+                padding: AppSpacing.cardPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.directions_walk_rounded,
+                          color: AppColors.primary,
+                          size: 24,
+                        ),
+                        AppSpacing.gapW12,
+                        Text(
+                          'Hardware Step Sensor Active',
+                          style: AppTypography.titleMedium.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    AppSpacing.gapH8,
+                    Text(
+                      'Habitude automatically tracks your steps in the background using your phone\'s cadence sensor.',
+                      style: AppTypography.bodySmall,
+                    ),
+                    AppSpacing.gapH16,
+                    PrimaryButton(
+                      text: 'Open Live Step Tracker',
+                      icon: Icons.speed_rounded,
+                      onPressed: () {
+                        context.push('/step_tracking');
+                      },
+                    ),
+                  ],
+                ),
               ),
+            ],
             AppSpacing.gapH24,
             // Instructions Section
             Text('Movement Guidance', style: AppTypography.headlineMedium),
@@ -409,45 +443,4 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 
   String get localProgressDisplay => '$_localProgress';
-
-  Widget _buildFeatureBanner({
-    required IconData icon,
-    required String title,
-    required String description,
-    required Color accentColor,
-  }) {
-    return Container(
-      padding: AppSpacing.cardPadding,
-      decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.08),
-        borderRadius: AppRadius.radiusLg,
-        border: Border.all(color: accentColor.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: accentColor, size: 24),
-          AppSpacing.gapW12,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.titleMedium.copyWith(color: accentColor),
-                ),
-                AppSpacing.gapH4,
-                Text(
-                  description,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
