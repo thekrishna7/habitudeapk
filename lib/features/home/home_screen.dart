@@ -12,6 +12,7 @@ import '../../core/widgets/section_header.dart';
 import '../../core/widgets/stat_card.dart';
 import '../../data/models/habit_task_model.dart';
 import '../../data/models/user_profile_model.dart';
+import '../../core/services/step_tracking_service.dart';
 import '../profile/profile_provider.dart';
 import '../profile/xp_provider.dart';
 import '../tasks/tasks_provider.dart';
@@ -39,6 +40,7 @@ class HomeScreen extends ConsumerWidget {
     final profile = profileAsync.valueOrNull;
     final tasks = tasksAsync.valueOrNull ?? [];
     final xpState = xpAsync.valueOrNull ?? const XPState.initial();
+    final stepState = ref.watch(stepTrackingProvider);
 
     final totalTasks = tasks.length;
     final completedTasks = tasks.where((t) => t.isCompleted).length;
@@ -71,7 +73,7 @@ class HomeScreen extends ConsumerWidget {
             AppSpacing.gapH24,
             _buildTodayProgressHeroCard(progress, completedTasks, totalTasks),
             AppSpacing.gapH20,
-            _buildQuickStatsRow(xpState),
+            _buildQuickStatsRow(context, xpState, stepState),
             AppSpacing.gapH28,
             SectionHeader(
               title: "Today's Routine",
@@ -181,8 +183,8 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 child: Center(
                   child: Text(
-                    userName.substring(0, 1).toUpperCase(),
-                    style: AppTypography.titleLarge.copyWith(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'A',
+                    style: AppTypography.titleMedium.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w900,
                     ),
@@ -212,8 +214,8 @@ class HomeScreen extends ConsumerWidget {
           // Glowing Radial Ring
           ProgressRing(
             progress: progress,
-            size: 106,
-            strokeWidth: 10,
+            size: 100,
+            strokeWidth: 9,
             percentageText: '$percent%',
           ),
           AppSpacing.gapW20,
@@ -263,17 +265,21 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickStatsRow(XPState xpState) {
+  Widget _buildQuickStatsRow(
+    BuildContext context,
+    XPState xpState,
+    StepTrackingState stepState,
+  ) {
     return Row(
       children: [
         Expanded(
           child: StatCard(
-            label: 'Active Streak',
-            value: '🔥 1 Day',
-            icon: Icons.local_fire_department_rounded,
-            iconColor: AppColors.tertiary,
-            subtitle: 'Day 1 of Consistency',
-            onTap: () {},
+            label: 'Live Steps',
+            value: '${stepState.todaySteps}',
+            icon: Icons.directions_walk_rounded,
+            iconColor: AppColors.secondary,
+            subtitle: stepState.pedestrianStatus,
+            onTap: () => context.push('/step_tracking'),
           ),
         ),
         AppSpacing.gapW12,
@@ -284,7 +290,7 @@ class HomeScreen extends ConsumerWidget {
             icon: Icons.bolt_rounded,
             iconColor: AppColors.primary,
             subtitle: '+${xpState.dailyXP} XP Today',
-            onTap: () {},
+            onTap: () => context.push('/progress'),
           ),
         ),
       ],

@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
@@ -11,7 +14,6 @@ import '../../core/pose/exercise_detector.dart';
 import '../../core/pose/exercise_detector_factory.dart';
 import '../../core/pose/pose_data.dart';
 import '../../core/pose/pose_landmark_point.dart';
-import '../../core/widgets/app_card.dart';
 import '../../core/widgets/primary_button.dart';
 import '../../data/models/habit_task_model.dart';
 import '../profile/xp_provider.dart';
@@ -36,6 +38,14 @@ class AIWorkoutScreen extends ConsumerStatefulWidget {
 class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
   late ExerciseDetector _detector;
   late ExerciseDetectionResult _latestResult;
+
+  CameraController? _cameraController;
+  List<CameraDescription> _availableCameras = [];
+  int _selectedCameraIndex = 0;
+  bool _isCameraInitialized = false;
+  bool _hasCameraPermission = false;
+  String? _cameraErrorMessage;
+
   Timer? _simulationTimer;
   bool _isSimulating = false;
   int _simFrame = 0;
@@ -50,10 +60,88 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
     _latestResult = _detector.processPose(
       PoseData(timestamp: DateTime.now()),
     );
+
+    _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      if (!kIsWeb) {
+        var status = await Permission.camera.status;
+        if (!status.isGranted) {
+          status = await Permission.camera.request();
+        }
+
+        if (!status.isGranted) {
+          setState(() {
+            _hasCameraPermission = false;
+            _cameraErrorMessage = 'Camera permission is required for AI workout tracking.';
+          });
+          return;
+        }
+      }
+
+      setState(() => _hasCameraPermission = true);
+
+      _availableCameras = await availableCameras();
+      if (_availableCameras.isNotEmpty) {
+        // Prefer front camera for workout form tracking
+        int initialIdx = _availableCameras.indexWhere(
+          (c) => c.lensDirection == CameraLensDirection.front,
+        );
+        if (initialIdx == -1) initialIdx = 0;
+
+        _selectedCameraIndex = initialIdx;
+        await _setupCameraController(_availableCameras[initialIdx]);
+      } else {
+        setState(() {
+          _cameraErrorMessage = 'No camera found on this device.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _cameraErrorMessage = 'Failed to initialize camera: $e';
+      });
+    }
+  }
+
+  Future<void> _setupCameraController(CameraDescription description) async {
+    await _cameraController?.dispose();
+
+    final controller = CameraController(
+      description,
+      ResolutionPreset.medium,
+      enableAudio: false,
+    );
+
+    try {
+      await controller.initialize();
+      if (mounted) {
+        setState(() {
+          _cameraController = controller;
+          _isCameraInitialized = true;
+          _cameraErrorMessage = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _cameraErrorMessage = 'Camera stream error: $e';
+          _isCameraInitialized = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _switchCamera() async {
+    if (_availableCameras.length < 2) return;
+    _selectedCameraIndex = (_selectedCameraIndex + 1) % _availableCameras.length;
+    await _setupCameraController(_availableCameras[_selectedCameraIndex]);
   }
 
   @override
   void dispose() {
+    _cameraController?.dispose();
     _simulationTimer?.cancel();
     super.dispose();
   }
@@ -71,7 +159,6 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
   }
 
   Future<void> _handleCompletion() async {
-    // Complete task in repository and award XP
     await ref.read(todayTasksNotifierProvider.notifier).completeTask(widget.taskId);
     ref.read(xpNotifierProvider.notifier).refresh();
 
@@ -120,7 +207,6 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
     );
   }
 
-  /// Interactive Simulation for developer testing / emulator validation.
   void _toggleSimulation() {
     if (_isSimulating) {
       _simulationTimer?.cancel();
@@ -169,30 +255,26 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
 
       case TaskType.plank:
         return PoseData(
-          shoulderLeft: const PoseLandmarkPoint(x: 0.25, y: 0.6),
-          hipLeft: const PoseLandmarkPoint(x: 0.5, y: 0.6),
-          ankleLeft: const PoseLandmarkPoint(x: 0.8, y: 0.6),
+          shoulderLeft: const PoseLandmarkPoint(x: 0.3, y: 0.5),
+          hipLeft: const PoseLandmarkPoint(x: 0.5, y: 0.52),
+          ankleLeft: const PoseLandmarkPoint(x: 0.75, y: 0.54),
           overallConfidence: 0.95,
           timestamp: now,
         );
 
       case TaskType.jumpingJacks:
-        final ankleDist = isDownPhase ? 0.35 : 0.15;
-        final wristY = isDownPhase ? 0.25 : 0.65;
+        final handY = isDownPhase ? 0.2 : 0.6;
+        final footX = isDownPhase ? 0.25 : 0.45;
         return PoseData(
-          shoulderLeft: const PoseLandmarkPoint(x: 0.45, y: 0.35),
-          shoulderRight: const PoseLandmarkPoint(x: 0.55, y: 0.35),
-          wristLeft: PoseLandmarkPoint(x: 0.2, y: wristY),
-          wristRight: PoseLandmarkPoint(x: 0.8, y: wristY),
-          ankleLeft: PoseLandmarkPoint(x: 0.5 - ankleDist, y: 0.85),
-          ankleRight: PoseLandmarkPoint(x: 0.5 + ankleDist, y: 0.85),
+          wristLeft: PoseLandmarkPoint(x: 0.3, y: handY),
+          wristRight: PoseLandmarkPoint(x: 0.7, y: handY),
+          ankleLeft: PoseLandmarkPoint(x: footX, y: 0.9),
+          ankleRight: PoseLandmarkPoint(x: 1.0 - footX, y: 0.9),
           overallConfidence: 0.95,
           timestamp: now,
         );
 
-      case TaskType.steps:
-      case TaskType.stretching:
-      case TaskType.custom:
+      default:
         return PoseData(timestamp: now);
     }
   }
@@ -208,10 +290,10 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Camera Viewport / Body Outline Frame
+            // Live Camera Viewport
             _buildCameraViewport(),
 
-            // Top Header: Back button, Exercise title, Target
+            // Top Header: Back, Title, Switch Camera & Target
             Positioned(
               top: 16,
               left: 16,
@@ -249,23 +331,40 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.2),
-                      borderRadius: AppRadius.radiusPill,
-                      border: Border.all(color: AppColors.primary),
-                    ),
-                    child: Text(
-                      'Target: ${_detector.target} ${_detector.unit}',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+                  Row(
+                    children: [
+                      if (_availableCameras.length > 1)
+                        IconButton.filled(
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black.withValues(alpha: 0.6),
+                          ),
+                          icon: const Icon(
+                            Icons.flip_camera_ios_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: _switchCamera,
+                        ),
+                      AppSpacing.gapW8,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.2),
+                          borderRadius: AppRadius.radiusPill,
+                          border: Border.all(color: AppColors.primary),
+                        ),
+                        child: Text(
+                          '${_detector.currentCount}/${_detector.target} ${_detector.unit}',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -349,39 +448,15 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
                       borderRadius: AppRadius.radiusLg,
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Text(
-                      _latestResult.feedback,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  AppSpacing.gapH16,
-                  // Main Counter Dashboard Card
-                  AppCard(
-                    backgroundColor: Colors.black.withValues(alpha: 0.85),
-                    borderColor: AppColors.primary.withValues(alpha: 0.4),
-                    padding: AppSpacing.cardPadding,
                     child: Column(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'COUNT',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                            Text(
-                              '${_latestResult.currentCount} / ${_latestResult.target} ${_latestResult.unit}',
-                              style: AppTypography.statNumberLarge.copyWith(
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ],
+                        Text(
+                          _latestResult.feedback,
+                          style: AppTypography.titleMedium.copyWith(
+                            color: formColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                         AppSpacing.gapH8,
                         ClipRRect(
@@ -392,11 +467,11 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
                             valueColor: const AlwaysStoppedAnimation<Color>(
                               AppColors.primary,
                             ),
-                            minHeight: 8,
+                            minHeight: 6,
                           ),
                         ),
-                        AppSpacing.gapH16,
-                        // Dev Simulation Button
+                        AppSpacing.gapH12,
+                        // Testing / Simulator action toggle
                         GestureDetector(
                           onTap: _toggleSimulation,
                           child: Container(
@@ -430,8 +505,8 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
                                 AppSpacing.gapW8,
                                 Text(
                                   _isSimulating
-                                      ? 'Testing Active (Simulating Motion)'
-                                      : 'Test Simulator (Tap to Test AI Detector)',
+                                      ? 'AI Tracking Active (Simulating Motion)'
+                                      : 'Auto Rep Count Tester (Tap to Test)',
                                   style: AppTypography.labelSmall.copyWith(
                                     color: _isSimulating
                                         ? AppColors.primary
@@ -463,24 +538,68 @@ class _AIWorkoutScreenState extends ConsumerState<AIWorkoutScreen> {
           borderRadius: AppRadius.radiusXl,
           border: Border.all(color: AppColors.border),
         ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Grid Lines & Corner Targeting
-            CustomPaint(
-              size: Size.infinite,
-              painter: _TargetingFramePainter(),
-            ),
-            // Human Pose Positioning Silhouette
-            Opacity(
-              opacity: 0.25,
-              child: Icon(
-                Icons.accessibility_new_rounded,
-                size: 240,
-                color: AppColors.primary,
+        child: ClipRRect(
+          borderRadius: AppRadius.radiusXl,
+          child: Stack(
+            alignment: Alignment.center,
+            fit: StackFit.expand,
+            children: [
+              // Live Camera Stream
+              if (_isCameraInitialized && _cameraController != null)
+                CameraPreview(_cameraController!)
+              else
+                Container(
+                  color: const Color(0xFF080B12),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _hasCameraPermission ? Icons.videocam_rounded : Icons.videocam_off_rounded,
+                          size: 48,
+                          color: AppColors.textTertiary,
+                        ),
+                        AppSpacing.gapH12,
+                        Text(
+                          _cameraErrorMessage ?? 'Initializing Camera Stream...',
+                          style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (!_hasCameraPermission) ...[
+                          AppSpacing.gapH16,
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.black,
+                            ),
+                            icon: const Icon(Icons.lock_open_rounded, size: 18),
+                            label: const Text('Grant Camera Access'),
+                            onPressed: _initCamera,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Grid Lines & Corner Targeting Overlay
+              CustomPaint(
+                size: Size.infinite,
+                painter: _TargetingFramePainter(),
               ),
-            ),
-          ],
+
+              // Human Pose Positioning Silhouette Guide
+              if (!_isCameraInitialized)
+                Opacity(
+                  opacity: 0.25,
+                  child: const Icon(
+                    Icons.accessibility_new_rounded,
+                    size: 240,
+                    color: AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
