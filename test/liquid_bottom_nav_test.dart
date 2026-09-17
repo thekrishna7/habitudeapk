@@ -29,7 +29,7 @@ void main() {
 
       // Verify all tab labels are rendered
       expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Workouts'), findsOneWidget);
+      expect(find.text('Workout'), findsOneWidget);
       expect(find.text('Progress'), findsOneWidget);
       expect(find.text('Profile'), findsOneWidget);
 
