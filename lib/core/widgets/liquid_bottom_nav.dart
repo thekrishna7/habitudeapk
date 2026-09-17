@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
 import '../../app/theme/app_typography.dart';
@@ -52,35 +53,35 @@ class LiquidBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 18, right: 18, bottom: 18, top: 6),
+      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 4),
       child: ClipRRect(
         borderRadius: AppRadius.radiusFull,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
           child: Container(
-            height: 68,
+            height: 64,
             decoration: BoxDecoration(
-              color: AppColors.surfaceGlass,
+              color: const Color(0x8A0B0E17), // iOS ultra-translucent frosted glass
               borderRadius: AppRadius.radiusFull,
               border: Border.all(
-                color: AppColors.borderGlass,
-                width: 1.2,
+                color: Colors.white.withValues(alpha: 0.16),
+                width: 1.0,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 28,
+                  offset: const Offset(0, 12),
                 ),
                 BoxShadow(
-                  color: AppColors.primaryGlow.withValues(alpha: 0.15),
-                  blurRadius: 20,
+                  color: AppColors.primaryGlow.withValues(alpha: 0.08),
+                  blurRadius: 16,
                   offset: const Offset(0, 2),
                 ),
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(items.length, (index) {
                 final isSelected = index == currentIndex;
                 final item = items[index];
@@ -88,59 +89,81 @@ class LiquidBottomNav extends StatelessWidget {
                 return Expanded(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => onTap(index),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(index);
+                    },
                     child: Center(
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 260),
-                        curve: Curves.easeOutBack,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isSelected ? 16 : 10,
-                          vertical: isSelected ? 8 : 6,
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
                         ),
-                        decoration: BoxDecoration(
-                          gradient: isSelected
-                              ? AppColors.accentGradient
-                              : null,
-                          borderRadius: AppRadius.radiusFull,
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: AppColors.primaryGlow,
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Row(
+                        child: Column(
                           mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // Icon with spring scale
                             AnimatedScale(
-                              scale: isSelected ? 1.08 : 1.0,
+                              scale: isSelected ? 1.15 : 1.0,
                               duration: const Duration(milliseconds: 200),
+                              curve: Curves.easeOutBack,
                               child: Icon(
                                 isSelected ? item.activeIcon : item.icon,
                                 size: 22,
                                 color: isSelected
-                                    ? AppColors.background
-                                    : AppColors.textSecondary,
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary.withValues(alpha: 0.7),
+                                shadows: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.primaryGlow,
+                                          blurRadius: 12,
+                                        ),
+                                      ]
+                                    : null,
                               ),
                             ),
-                            if (isSelected) ...[
-                              const SizedBox(width: 6),
-                              AnimatedOpacity(
-                                opacity: isSelected ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 200),
-                                child: Text(
-                                  item.label,
-                                  style: AppTypography.labelSmall.copyWith(
-                                    color: AppColors.background,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                  ),
-                                ),
+                            const SizedBox(height: 3),
+                            // Label
+                            Text(
+                              item.label,
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              style: AppTypography.labelSmall.copyWith(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.textSecondary.withValues(alpha: 0.6),
+                                fontWeight: isSelected
+                                    ? FontWeight.w800
+                                    : FontWeight.w500,
+                                fontSize: 10.5,
+                                letterSpacing: 0.2,
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 2),
+                            // iOS Active Droplet indicator dot
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: isSelected ? 12 : 0,
+                              height: 2.5,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                borderRadius: AppRadius.radiusPill,
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(
+                                          color: AppColors.primaryGlow,
+                                          blurRadius: 6,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
                           ],
                         ),
                       ),
