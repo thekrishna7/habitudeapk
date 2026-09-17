@@ -4,12 +4,12 @@ import '../../app/theme/app_spacing.dart';
 import '../../app/theme/app_typography.dart';
 import 'app_card.dart';
 
-/// Compact metric / stat card (e.g. Streak, XP, Steps).
+/// Luxury metric capsule card with glowing icon pod and bold numerical typography.
 class StatCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  final Color? iconColor;
+  final Color iconColor;
   final String? subtitle;
   final VoidCallback? onTap;
 
@@ -18,7 +18,7 @@ class StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.iconColor,
+    required this.iconColor,
     this.subtitle,
     this.onTap,
   });
@@ -27,28 +27,44 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       onTap: onTap,
-      padding: AppSpacing.cardPaddingCompact,
+      padding: const EdgeInsets.all(16),
+      enableGlow: true,
+      glowColor: iconColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                label.toUpperCase(),
-                style: AppTypography.labelSmall,
+                label,
+                style: AppTypography.labelSmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               Container(
-                padding: const EdgeInsets.all(6),
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: (iconColor ?? AppColors.primary).withValues(alpha: 0.12),
+                  color: iconColor.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: iconColor.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: iconColor.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Icon(
                   icon,
+                  color: iconColor,
                   size: 16,
-                  color: iconColor ?? AppColors.primary,
                 ),
               ),
             ],
@@ -56,13 +72,21 @@ class StatCard extends StatelessWidget {
           AppSpacing.gapH8,
           Text(
             value,
-            style: AppTypography.statNumberMedium,
+            style: AppTypography.headlineMedium.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
           ),
           if (subtitle != null) ...[
             AppSpacing.gapH4,
             Text(
               subtitle!,
-              style: AppTypography.caption,
+              style: AppTypography.caption.copyWith(
+                color: iconColor.withValues(alpha: 0.9),
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],

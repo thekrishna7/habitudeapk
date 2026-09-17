@@ -1,32 +1,32 @@
-import 'dart:math' as math;
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_typography.dart';
 
-/// Circular animated progress ring with gradient and glowing glow effect.
+/// Futuristic glowing radial progress gauge with multi-layer neon arcs.
 class ProgressRing extends StatelessWidget {
   final double progress; // 0.0 to 1.0
   final double size;
   final double strokeWidth;
-  final Widget? centerChild;
+  final Color? progressColor;
+  final Color? backgroundColor;
   final String? percentageText;
-  final Gradient? progressGradient;
-  final Color? trackColor;
+  final Widget? centerWidget;
 
   const ProgressRing({
     super.key,
     required this.progress,
-    this.size = 140.0,
-    this.strokeWidth = 12.0,
-    this.centerChild,
+    this.size = 110,
+    this.strokeWidth = 10,
+    this.progressColor,
+    this.backgroundColor,
     this.percentageText,
-    this.progressGradient,
-    this.trackColor,
+    this.centerWidget,
   });
 
   @override
   Widget build(BuildContext context) {
-    final clampedProgress = progress.clamp(0.0, 1.0);
+    final clamped = progress.clamp(0.0, 1.0);
 
     return SizedBox(
       width: size,
@@ -34,26 +34,28 @@ class ProgressRing extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // Custom Painted Neon Glow Arc
           CustomPaint(
             size: Size(size, size),
-            painter: _ProgressRingPainter(
-              progress: clampedProgress,
+            painter: _NeonRingPainter(
+              progress: clamped,
               strokeWidth: strokeWidth,
-              progressGradient: progressGradient ?? AppColors.accentGradient,
-              trackColor: trackColor ?? AppColors.surfaceElevated,
+              backgroundColor: backgroundColor ?? AppColors.surfaceHighlight,
+              progressGradient: AppColors.accentGradient,
             ),
           ),
-          if (centerChild != null)
-            centerChild!
+
+          // Center Text / Widget
+          if (centerWidget != null)
+            centerWidget!
           else if (percentageText != null)
             Text(
               percentageText!,
-              style: AppTypography.statNumberLarge,
-            )
-          else
-            Text(
-              '${(clampedProgress * 100).toInt()}%',
-              style: AppTypography.statNumberLarge,
+              style: AppTypography.headlineSmall.copyWith(
+                fontWeight: FontWeight.w900,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
             ),
         ],
       ),
@@ -61,17 +63,17 @@ class ProgressRing extends StatelessWidget {
   }
 }
 
-class _ProgressRingPainter extends CustomPainter {
+class _NeonRingPainter extends CustomPainter {
   final double progress;
   final double strokeWidth;
+  final Color backgroundColor;
   final Gradient progressGradient;
-  final Color trackColor;
 
-  _ProgressRingPainter({
+  _NeonRingPainter({
     required this.progress,
     required this.strokeWidth,
+    required this.backgroundColor,
     required this.progressGradient,
-    required this.trackColor,
   });
 
   @override
@@ -80,40 +82,54 @@ class _ProgressRingPainter extends CustomPainter {
     final radius = (size.width - strokeWidth) / 2;
 
     // Background track
-    final trackPaint = Paint()
-      ..color = trackColor
+    final bgPaint = Paint()
+      ..color = backgroundColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawCircle(center, radius, trackPaint);
+    canvas.drawCircle(center, radius, bgPaint);
 
     if (progress <= 0) return;
 
-    // Progress arc with gradient shader
+    final sweepAngle = 2 * pi * progress;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    final sweepAngle = 2 * math.pi * progress;
 
-    final progressPaint = Paint()
+    // Glowing shadow arc
+    final glowPaint = Paint()
+      ..shader = progressGradient.createShader(rect)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth + 4
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+
+    canvas.drawArc(
+      rect,
+      -pi / 2,
+      sweepAngle,
+      false,
+      glowPaint,
+    );
+
+    // Foreground sharp neon arc
+    final fgPaint = Paint()
       ..shader = progressGradient.createShader(rect)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
 
-    // Rotate start angle to 12 o'clock (-pi / 2)
     canvas.drawArc(
       rect,
-      -math.pi / 2,
+      -pi / 2,
       sweepAngle,
       false,
-      progressPaint,
+      fgPaint,
     );
   }
 
   @override
-  bool shouldRepaint(covariant _ProgressRingPainter oldDelegate) {
+  bool shouldRepaint(covariant _NeonRingPainter oldDelegate) {
     return oldDelegate.progress != progress ||
-        oldDelegate.strokeWidth != strokeWidth ||
-        oldDelegate.trackColor != trackColor;
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

@@ -1,60 +1,92 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_radius.dart';
-import '../../app/theme/app_spacing.dart';
 
-/// Reusable Glass/Elevated Container Card with subtle border and optional onTap.
+/// Premium glassmorphism card featuring frosted acrylic background,
+/// specular hairline reflection, and optional glowing neon border.
 class AppCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
-  final EdgeInsetsGeometry? margin;
   final VoidCallback? onTap;
   final Color? backgroundColor;
   final Color? borderColor;
+  final Gradient? gradient;
+  final BorderRadius? borderRadius;
   final double? width;
   final double? height;
-  final Gradient? gradient;
+  final bool enableGlow;
+  final Color? glowColor;
 
   const AppCard({
     super.key,
     required this.child,
     this.padding,
-    this.margin,
     this.onTap,
     this.backgroundColor,
     this.borderColor,
+    this.gradient,
+    this.borderRadius,
     this.width,
     this.height,
-    this.gradient,
+    this.enableGlow = false,
+    this.glowColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final radius = borderRadius ?? AppRadius.radiusLg;
+
+    Widget cardContent = Container(
       width: width,
       height: height,
-      margin: margin,
+      padding: padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: gradient == null ? (backgroundColor ?? AppColors.surface) : null,
+        color: gradient == null
+            ? (backgroundColor ?? AppColors.surfaceGlass)
+            : null,
         gradient: gradient,
-        borderRadius: AppRadius.radiusLg,
+        borderRadius: radius,
         border: Border.all(
-          color: borderColor ?? AppColors.border,
-          width: 1.0,
+          color: borderColor ?? AppColors.borderGlass,
+          width: 1.2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+          if (enableGlow)
+            BoxShadow(
+              color: (glowColor ?? AppColors.primary).withValues(alpha: 0.15),
+              blurRadius: 20,
+              offset: const Offset(0, 2),
+            ),
+        ],
       ),
-      child: Material(
+      child: child,
+    );
+
+    if (onTap != null) {
+      cardContent = Material(
         color: Colors.transparent,
+        borderRadius: radius,
         child: InkWell(
           onTap: onTap,
-          borderRadius: AppRadius.radiusLg,
-          splashColor: AppColors.surfaceHighlight.withValues(alpha: 0.5),
-          highlightColor: Colors.transparent,
-          child: Padding(
-            padding: padding ?? AppSpacing.cardPadding,
-            child: child,
-          ),
+          borderRadius: radius,
+          splashColor: AppColors.primary.withValues(alpha: 0.1),
+          highlightColor: AppColors.secondary.withValues(alpha: 0.05),
+          child: cardContent,
         ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: cardContent,
       ),
     );
   }

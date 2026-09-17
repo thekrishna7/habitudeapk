@@ -139,81 +139,122 @@ class _PersonalizationScreenState extends ConsumerState<PersonalizationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Navigation Bar (Back button, Progress indicator, Step Label)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg16,
-                vertical: AppSpacing.sm8,
-              ),
-              child: Row(
-                children: [
-                  if (_currentStep > 0 && _currentStep < _totalSteps - 1)
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
-                        color: AppColors.textSecondary,
-                      ),
-                      onPressed: _goToPreviousStep,
-                    )
-                  else
-                    const SizedBox(width: 48, height: 48),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          _currentStep == _totalSteps - 1
-                              ? 'Summary'
-                              : 'Step ${_currentStep + 1} of ${_totalSteps - 1}',
-                          style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.primary,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        AppSpacing.gapH8,
-                        ClipRRect(
-                          borderRadius: AppRadius.radiusPill,
-                          child: LinearProgressIndicator(
-                            value: (_currentStep + 1) / _totalSteps,
-                            backgroundColor: AppColors.surfaceHighlight,
-                            valueColor: const AlwaysStoppedAnimation<Color>(
-                              AppColors.primary,
-                            ),
-                            minHeight: 4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 48, height: 48),
-                ],
+      body: Stack(
+        children: [
+          // Ambient neon atmospheric glow
+          Positioned(
+            top: -120,
+            right: -100,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.18),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
+          ),
+          Positioned(
+            bottom: -60,
+            left: -80,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.secondary.withValues(alpha: 0.14),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
 
-            // Page Slides
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (index) {
-                  setState(() => _currentStep = index);
-                },
-                children: [
-                  _buildNameStep(),
-                  _buildBasicInfoStep(),
-                  _buildFitnessLevelStep(),
-                  _buildPrimaryGoalStep(),
-                  _buildDailyActivityGoalStep(),
-                  _buildWorkoutPreferenceStep(),
-                  _buildReadyStep(),
-                ],
-              ),
+          SafeArea(
+            child: Column(
+              children: [
+                // Top Navigation Bar (Back button, Progress indicator, Step Label)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg16,
+                    vertical: AppSpacing.sm8,
+                  ),
+                  child: Row(
+                    children: [
+                      if (_currentStep > 0 && _currentStep < _totalSteps - 1)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 20,
+                            color: AppColors.textSecondary,
+                          ),
+                          onPressed: _goToPreviousStep,
+                        )
+                      else
+                        const SizedBox(width: 48, height: 48),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              _currentStep == _totalSteps - 1
+                                  ? 'Summary'
+                                  : 'Step ${_currentStep + 1} of ${_totalSteps - 1}',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: AppColors.primary,
+                                letterSpacing: 1.2,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            AppSpacing.gapH8,
+                            ClipRRect(
+                              borderRadius: AppRadius.radiusPill,
+                              child: LinearProgressIndicator(
+                                value: (_currentStep + 1) / _totalSteps,
+                                backgroundColor: AppColors.surfaceHighlight,
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
+                                ),
+                                minHeight: 4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 48, height: 48),
+                    ],
+                  ),
+                ),
+
+                // Page Slides
+                Expanded(
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (index) {
+                      setState(() => _currentStep = index);
+                    },
+                    children: [
+                      _buildNameStep(),
+                      _buildBasicInfoStep(),
+                      _buildFitnessLevelStep(),
+                      _buildPrimaryGoalStep(),
+                      _buildDailyActivityGoalStep(),
+                      _buildWorkoutPreferenceStep(),
+                      _buildReadyStep(),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

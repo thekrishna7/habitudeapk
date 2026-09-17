@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../app/theme/app_colors.dart';
 
-/// Base Application Scaffold that guarantees consistent background,
-/// safe area handling, and system bar behaviors.
+/// Luxury Application Scaffold featuring ambient mesh glow orbs,
+/// frosted liquid glass layers, and safe area handling.
 class AppScaffold extends StatelessWidget {
   final Widget body;
   final PreferredSizeWidget? appBar;
@@ -10,6 +10,7 @@ class AppScaffold extends StatelessWidget {
   final Widget? floatingActionButton;
   final bool useSafeArea;
   final bool extendBodyBehindAppBar;
+  final bool showAmbientGlow;
   final Color? backgroundColor;
   final EdgeInsetsGeometry? padding;
 
@@ -21,6 +22,7 @@ class AppScaffold extends StatelessWidget {
     this.floatingActionButton,
     this.useSafeArea = true,
     this.extendBodyBehindAppBar = false,
+    this.showAmbientGlow = true,
     this.backgroundColor,
     this.padding,
   });
@@ -47,7 +49,77 @@ class AppScaffold extends StatelessWidget {
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,
       extendBodyBehindAppBar: extendBodyBehindAppBar,
-      body: content,
+      extendBody: true, // Allows content to flow smoothly under floating liquid bar
+      body: Stack(
+        children: [
+          // Ambient Mesh Glow Orbs
+          if (showAmbientGlow) ...[
+            // Top Right Cyber Mint Orb
+            Positioned(
+              top: -80,
+              right: -60,
+              child: IgnorePointer(
+                child: Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.15),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Center Left Cyan Orb
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.35,
+              left: -100,
+              child: IgnorePointer(
+                child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.secondary.withValues(alpha: 0.10),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            // Bottom Right Violet Orb
+            Positioned(
+              bottom: 40,
+              right: -80,
+              child: IgnorePointer(
+                child: Container(
+                  width: 280,
+                  height: 280,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppColors.accentPurple.withValues(alpha: 0.12),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // Main Screen Content
+          Positioned.fill(child: content),
+        ],
+      ),
     );
   }
 }

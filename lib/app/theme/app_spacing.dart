@@ -29,6 +29,7 @@ class AppSpacing {
 
   static const SizedBox gapW4 = SizedBox(width: xs4);
   static const SizedBox gapW8 = SizedBox(width: sm8);
+  static const SizedBox gapW10 = SizedBox(width: 10.0);
   static const SizedBox gapW12 = SizedBox(width: md12);
   static const SizedBox gapW16 = SizedBox(width: lg16);
   static const SizedBox gapW20 = SizedBox(width: xl20);

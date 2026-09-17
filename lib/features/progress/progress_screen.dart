@@ -36,7 +36,7 @@ class ProgressScreen extends ConsumerWidget {
           physics: const AlwaysScrollableScrollPhysics(
             parent: BouncingScrollPhysics(),
           ),
-          padding: AppSpacing.pagePadding,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/widgets/app_scaffold.dart';
+import '../core/widgets/liquid_bottom_nav.dart';
 import '../data/models/habit_task_model.dart';
 import '../features/authentication/login_screen.dart';
 import '../features/exercise_detection/exercise_detection_screen.dart';
@@ -19,150 +21,162 @@ import '../features/tasks/tasks_screen.dart';
 import '../features/workout/ai_workout_screen.dart';
 import '../features/workout/workout_screen.dart';
 
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/splash',
     routes: [
+      // Fullscreen flows (No bottom nav)
       GoRoute(
         path: '/splash',
         name: 'splash',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const SplashScreen(),
-        ),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const OnboardingScreen(),
-        ),
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: '/personalization',
         name: 'personalization',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const PersonalizationScreen(),
-        ),
+        builder: (context, state) => const PersonalizationScreen(),
       ),
       GoRoute(
         path: '/login',
         name: 'login',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const LoginScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/home',
-        name: 'home',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const HomeScreen(),
-        ),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/tasks',
         name: 'tasks',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const TasksScreen(),
-        ),
+        builder: (context, state) => const TasksScreen(),
       ),
       GoRoute(
         path: '/task-detail/:id',
         name: 'task_detail',
-        pageBuilder: (context, state) {
+        builder: (context, state) {
           final taskId = state.pathParameters['id'] ?? '';
-          return _buildPageTransition(
-            key: state.pageKey,
-            child: TaskDetailScreen(taskId: taskId),
-          );
+          return TaskDetailScreen(taskId: taskId);
         },
-      ),
-      GoRoute(
-        path: '/workout',
-        name: 'workout',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const WorkoutScreen(),
-        ),
       ),
       GoRoute(
         path: '/ai-workout',
         name: 'ai_workout',
-        pageBuilder: (context, state) {
+        builder: (context, state) {
           final taskId = state.uri.queryParameters['taskId'] ?? 'custom';
           final typeStr = state.uri.queryParameters['type'] ?? 'pushUps';
           final targetStr = state.uri.queryParameters['target'] ?? '10';
           final exerciseType = TaskType.fromString(typeStr);
           final target = int.tryParse(targetStr) ?? 10;
 
-          return _buildPageTransition(
-            key: state.pageKey,
-            child: AIWorkoutScreen(
-              taskId: taskId,
-              exerciseType: exerciseType,
-              target: target,
-            ),
+          return AIWorkoutScreen(
+            taskId: taskId,
+            exerciseType: exerciseType,
+            target: target,
           );
         },
       ),
       GoRoute(
         path: '/step_tracking',
         name: 'step_tracking',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const StepTrackingScreen(),
-        ),
+        builder: (context, state) => const StepTrackingScreen(),
       ),
       GoRoute(
         path: '/exercise_detection',
         name: 'exercise_detection',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const ExerciseDetectionScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/progress',
-        name: 'progress',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const ProgressScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/profile',
-        name: 'profile',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const ProfileScreen(),
-        ),
+        builder: (context, state) => const ExerciseDetectionScreen(),
       ),
       GoRoute(
         path: '/edit-profile',
         name: 'edit_profile',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const EditProfileScreen(),
-        ),
+        builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
         path: '/settings',
         name: 'settings',
-        pageBuilder: (context, state) => _buildPageTransition(
-          key: state.pageKey,
-          child: const SettingsScreen(),
-        ),
+        builder: (context, state) => const SettingsScreen(),
+      ),
+
+      // Main App Shell with Floating Liquid Glass Navigation Dock
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppScaffold(
+            body: navigationShell,
+            extendBodyBehindAppBar: true,
+            bottomNavigationBar: LiquidBottomNav(
+              currentIndex: navigationShell.currentIndex,
+              onTap: (index) {
+                navigationShell.goBranch(
+                  index,
+                  initialLocation: index == navigationShell.currentIndex,
+                );
+              },
+            ),
+          );
+        },
+        branches: [
+          // Branch 0: Home
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                name: 'home',
+                pageBuilder: (context, state) => _buildFadePage(
+                  key: state.pageKey,
+                  child: const HomeScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 1: Workouts
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/workout',
+                name: 'workout',
+                pageBuilder: (context, state) => _buildFadePage(
+                  key: state.pageKey,
+                  child: const WorkoutScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 2: Progress
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/progress',
+                name: 'progress',
+                pageBuilder: (context, state) => _buildFadePage(
+                  key: state.pageKey,
+                  child: const ProgressScreen(),
+                ),
+              ),
+            ],
+          ),
+          // Branch 3: Profile
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                name: 'profile',
+                pageBuilder: (context, state) => _buildFadePage(
+                  key: state.pageKey,
+                  child: const ProfileScreen(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );
 });
 
-CustomTransitionPage<void> _buildPageTransition({
+CustomTransitionPage<void> _buildFadePage({
   required LocalKey key,
   required Widget child,
 }) {

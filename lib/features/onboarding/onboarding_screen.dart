@@ -23,25 +23,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final List<_OnboardingItem> _pages = const [
     _OnboardingItem(
       badge: 'AUTOMATED TRACKING',
-      title: 'Track Automatically',
+      title: 'Real-Time Movement',
       subtitle:
-          'Habitude seamlessly logs your daily movement and steps in real time without manual check-ins.',
+          'Habitude tracks your steps and baseline physical output passively with high-precision cadence sensors.',
       icon: Icons.directions_run_rounded,
       accentColor: AppColors.primary,
     ),
     _OnboardingItem(
       badge: 'COMPUTER VISION AI',
-      title: 'Move With AI',
+      title: 'Move With AI Coach',
       subtitle:
-          'Next-gen camera vision evaluates your posture, guides exercise form, and counts every rep accurately.',
+          'Real-time on-device computer vision posture tracking for push-ups, squats, and planks with instant rep counting.',
       icon: Icons.camera_enhance_rounded,
       accentColor: AppColors.secondary,
     ),
     _OnboardingItem(
-      badge: 'PROGRESSIVE HABITS',
-      title: 'Build Your Streak',
+      badge: 'STREAKS & XP RANKS',
+      title: 'Unstoppable Momentum',
       subtitle:
-          'Earn XP, unlock progressive fitness targets, and transform daily consistency into personal growth.',
+          'Earn XP, unlock progressive fitness targets, and transform daily athletic consistency into your highest level.',
       icon: Icons.local_fire_department_rounded,
       accentColor: AppColors.tertiary,
     ),
@@ -75,99 +75,171 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final isLastPage = _currentIndex == _pages.length - 1;
+    final currentAccent = _pages[_currentIndex].accentColor;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Bar: Tagline & Skip Button
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl20,
-                vertical: AppSpacing.md12,
+      body: Stack(
+        children: [
+          // Ambient neon atmospheric glow
+          Positioned(
+            top: -100,
+            right: -80,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    currentAccent.withValues(alpha: 0.22),
+                    Colors.transparent,
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    AppConstants.appName,
-                    style: AppTypography.titleMedium.copyWith(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                    ),
+            ),
+          ),
+          Positioned(
+            bottom: 60,
+            left: -100,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: Column(
+              children: [
+                // Top Bar: Tagline & Skip Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl20,
+                    vertical: AppSpacing.md12,
                   ),
-                  if (!isLastPage)
-                    TextButton(
-                      onPressed: _completeOnboarding,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.textTertiary,
-                        visualDensity: VisualDensity.compact,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: AppRadius.radiusSm,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryGlow,
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'H',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                          AppSpacing.gapW10,
+                          Text(
+                            AppConstants.appName,
+                            style: AppTypography.titleMedium.copyWith(
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Text(
-                        'Skip',
-                        style: AppTypography.labelMedium.copyWith(
-                          color: AppColors.textSecondary,
+                      if (!isLastPage)
+                        TextButton(
+                          onPressed: _completeOnboarding,
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.textTertiary,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          child: Text(
+                            'Skip',
+                            style: AppTypography.labelMedium.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(height: 36, width: 48),
+                    ],
+                  ),
+                ),
+
+                // Main PageView Slides
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pages.length,
+                    onPageChanged: (index) {
+                      setState(() => _currentIndex = index);
+                    },
+                    itemBuilder: (context, index) {
+                      final item = _pages[index];
+                      return _buildPageSlide(item);
+                    },
+                  ),
+                ),
+
+                // Bottom Navigation Section (Indicator & Action Buttons)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xl20,
+                    vertical: AppSpacing.lg16,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Page Indicator Pills
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _pages.length,
+                          (index) => _buildIndicator(index == _currentIndex, _pages[index].accentColor),
                         ),
                       ),
-                    )
-                  else
-                    const SizedBox(height: 36, width: 48),
-                ],
-              ),
-            ),
-
-            // Main PageView Slides
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _pages.length,
-                onPageChanged: (index) {
-                  setState(() => _currentIndex = index);
-                },
-                itemBuilder: (context, index) {
-                  final item = _pages[index];
-                  return _buildPageSlide(item);
-                },
-              ),
-            ),
-
-            // Bottom Navigation Section (Indicator & Action Buttons)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xl20,
-                vertical: AppSpacing.lg16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Page Indicator Pills
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      _pages.length,
-                      (index) => _buildIndicator(index == _currentIndex),
-                    ),
+                      AppSpacing.gapH24,
+                      // Action Button
+                      PrimaryButton(
+                        text: isLastPage ? 'Launch Habitude' : 'Continue',
+                        icon: isLastPage ? Icons.bolt_rounded : Icons.arrow_forward_rounded,
+                        onPressed: _nextPage,
+                      ),
+                      AppSpacing.gapH12,
+                      // Sub-text
+                      Text(
+                        AppConstants.appSubtagline,
+                        style: AppTypography.caption.copyWith(
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  AppSpacing.gapH24,
-                  // Action Button
-                  PrimaryButton(
-                    text: isLastPage ? 'Get Started' : 'Next',
-                    icon: isLastPage ? Icons.arrow_forward_rounded : null,
-                    onPressed: _nextPage,
-                  ),
-                  AppSpacing.gapH12,
-                  // Sub-text
-                  Text(
-                    AppConstants.appSubtagline,
-                    style: AppTypography.caption,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -179,31 +251,53 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Illustration / Futuristic Icon Container
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceElevated,
-              border: Border.all(
-                color: item.accentColor.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: item.accentColor.withValues(alpha: 0.15),
-                  blurRadius: 36,
-                  offset: const Offset(0, 10),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer rotating pulse ring
+              Container(
+                width: 190,
+                height: 190,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: item.accentColor.withValues(alpha: 0.15),
+                    width: 1.5,
+                  ),
                 ),
-              ],
-            ),
-            child: Center(
-              child: Icon(
-                item.icon,
-                size: 64,
-                color: item.accentColor,
               ),
-            ),
+              Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      item.accentColor.withValues(alpha: 0.25),
+                      AppColors.surfaceElevated,
+                    ],
+                  ),
+                  border: Border.all(
+                    color: item.accentColor.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: item.accentColor.withValues(alpha: 0.3),
+                      blurRadius: 40,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    item.icon,
+                    size: 64,
+                    color: item.accentColor,
+                  ),
+                ),
+              ),
+            ],
           ),
           AppSpacing.gapH40,
           // Feature Badge
@@ -213,7 +307,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               color: item.accentColor.withValues(alpha: 0.12),
               borderRadius: AppRadius.radiusPill,
               border: Border.all(
-                color: item.accentColor.withValues(alpha: 0.25),
+                color: item.accentColor.withValues(alpha: 0.35),
                 width: 1,
               ),
             ),
@@ -221,8 +315,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               item.badge,
               style: AppTypography.labelSmall.copyWith(
                 color: item.accentColor,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
               ),
             ),
           ),
@@ -230,13 +324,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           // Slide Title
           Text(
             item.title,
-            style: AppTypography.displaySmall,
+            style: AppTypography.displaySmall.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
             textAlign: TextAlign.center,
           ),
           AppSpacing.gapH12,
           // Slide Subtitle
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               item.subtitle,
               style: AppTypography.bodyLarge.copyWith(
@@ -251,20 +348,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildIndicator(bool isActive) {
+  Widget _buildIndicator(bool isActive, Color color) {
     return AnimatedContainer(
       duration: AppConstants.animFast,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       height: 6,
-      width: isActive ? 28 : 8,
+      width: isActive ? 32 : 8,
       decoration: BoxDecoration(
-        color: isActive ? AppColors.primary : AppColors.surfaceHighlight,
+        color: isActive ? color : AppColors.surfaceHighlight,
         borderRadius: AppRadius.radiusPill,
         boxShadow: isActive
             ? [
                 BoxShadow(
-                  color: AppColors.primaryGlow,
-                  blurRadius: 8,
+                  color: color.withValues(alpha: 0.6),
+                  blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
               ]
